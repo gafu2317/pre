@@ -102,28 +102,58 @@ def main():
     if st.session_state["graph_data"]:
         graph = st.session_state["graph_data"]
         
-        st.markdown("""
-        <div style="background-color:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #ddd; margin-bottom:20px;">
-            <h5 style="margin:0 0 10px 0;">💡 図の見方 (Legend)</h5>
-            <p style="margin:0;">各ノード（発言）を、話題の近さに応じて2次元マップ上に配置したものです。線は議論の親子関係を表します。</p>
-            <ul style="font-size: smaller; margin-bottom:0;">
-                <li><b>点の色:</b> 話題のスペクトル（横軸の位置）に応じた連続的なグラデーション</li>
-                <li><b>点の形:</b> ノードの種類（論点、提案など）</li>
-                <li><b>点の横のテキスト:</b> ノードのID</li>
-                <li><b>点と点の距離:</b> 話題の近さ</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        topic_map_chart = TopicMapPlotter.generate_plot(graph)
-        
-        if topic_map_chart:
-            st.altair_chart(topic_map_chart, use_container_width=True)
-        else:
-            st.info("トピックマップの描画には、2つ以上のノードと「トピックマップ分析」の実行が必要です。")
-        
-        with st.expander("詳細データを見る"):
-            st.json(graph.model_dump())
+        # タブを再導入
+        tab1, tab2 = st.tabs(["🗺️ トピックマップ", "📈 時間軸分析"])
+
+        with tab1:
+            st.markdown("""
+            <div style="background-color:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #ddd; margin-bottom:20px;">
+                <h5 style="margin:0 0 10px 0;">💡 図の見方 (Legend)</h5>
+                <p style="margin:0;">各ノード（発言）を、話題の近さに応じて2次元マップ上に配置したものです。線は議論の親子関係を表します。</p>
+                <ul style="font-size: smaller; margin-bottom:0;">
+                    <li><b>ノードの位置 (X軸):</b> 議論の主要なテーマの方向（左右）</li>
+                    <li><b>ノードの位置 (Y軸):</b> 議論の二番目に重要なテーマの方向（上下）</li>
+                    <li><b>ノードの色:</b> 話題のスペクトル（X軸とY軸の組み合わせで決定）</li>
+                    <li><b>ノードの形:</b> ノードの種類（論点、提案など）</li>
+                    <li><b>ノードのテキスト:</b> 発言者と内容の要約</li>
+                    <li><b>点と点の距離:</b> 話題の近さ</li>
+                    <li><b>線:</b> 議論の親子関係</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            topic_map_chart = TopicMapPlotter.generate_plot(graph)
+            if topic_map_chart:
+                st.altair_chart(topic_map_chart, use_container_width=True)
+            else:
+                st.info("トピックマップの描画には、2つ以上のノードと「トピックマップ分析」の実行が必要です。")
+            
+            with st.expander("詳細データを見る"):
+                st.json(graph.model_dump())
+
+        with tab2:
+            st.markdown("""
+            <div style="background-color:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #ddd; margin-bottom:20px;">
+                <h5 style="margin:0 0 10px 0;">💡 図の見方 (Legend)</h5>
+                <p style="margin:0;">会話の進行順にノードが横一直線上に並び、各ノードの色の変化で話題の移り変わりを追います。</p>
+                <ul style="font-size: smaller; margin-bottom:0;">
+                    <li><b>横軸:</b> 会話の進行順（時間）</li>
+                    <li><b>縦軸:</b> （明示的な意味はありませんが、ノード配置の基準となります）</li>
+                    <li><b>ノードの色:</b> 話題のスペクトル（トピックマップと同じ、X軸とY軸の組み合わせで決定）</li>
+                    <li><b>ノードの形:</b> ノードの種類（論点、提案など）</li>
+                    <li><b>ノードのテキスト:</b> 発言者と内容の要約</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+
+            timeline_chart = TopicMapPlotter.generate_timeline_plot(graph) # 新しいメソッドを呼び出し
+            if timeline_chart:
+                st.altair_chart(timeline_chart, use_container_width=True)
+            else:
+                st.info("時間軸分析の描画には、2つ以上のノードと「トピック分析」の実行が必要です。")
+
+            with st.expander("詳細データを見る"):
+                st.json(graph.model_dump())
 
     else:
         st.info("👈 左のサイドバーから「構造化を実行」してください。")

@@ -22,6 +22,7 @@ class IBISStrategy(MiningStrategy):
 3. Argument(根拠)を特定し、支持か反対かを明確にする。
 4. 結論が出ている場合はDecision(決定)とする。
 5. **出力する `content` は簡潔な日本語の要約にすること。**
+6. **各ノードには、会話ログにおける出現順を示す `sequence` (1から始まる整数) を必ず付与すること。**
 
 # Edge Labels (矢印のラベル定義)
 以下の日本語ラベルを使用してください：
@@ -34,8 +35,8 @@ class IBISStrategy(MiningStrategy):
 Strictly output in JSON format matching this schema:
 {
   "nodes": [
-    {"id": "n1", "type": "issue", "content": "使用言語はどうするか？", "speaker": "田中"},
-    {"id": "n2", "type": "position", "content": "Pythonを採用する", "speaker": "佐藤"}
+    {"id": "n1", "type": "issue", "content": "使用言語はどうするか？", "speaker": "田中", "sequence": 1},
+    {"id": "n2", "type": "position", "content": "Pythonを採用する", "speaker": "佐藤", "sequence": 2}
   ],
   "edges": [
     {"source": "n2", "target": "n1", "label": "提案"}

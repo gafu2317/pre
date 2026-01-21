@@ -7,6 +7,7 @@ class Node(BaseModel):
     content: str
     speaker: Optional[str] = None
     position_2d: Optional[List[float]] = None
+    sequence: Optional[int] = None
 
 class Edge(BaseModel):
     source: str
