@@ -1,5 +1,6 @@
 import os
 import streamlit as st
+import numpy as np # numpyをインポート
 from dotenv import load_dotenv
 
 from src.strategies.ibis import IBISStrategy
@@ -72,10 +73,12 @@ def main():
                             strategy = ToulminStrategy()
                         
                         graph = strategy.analyze(text_area_val)
-                        # position_2d属性を初期化
+                        # 属性を初期化
                         for node in graph.nodes:
                             # Pydanticモデルにフィールドがないとエラーになるため、Noneで初期化しておく
                             node.position_2d = None
+                            node.embedding = None # embeddingも初期化
+                            node.cosine_sim_to_first = None # コサイン類似度も初期化
                         st.session_state["graph_data"] = graph
 
                     # --- トピック分析処理 (ベクトル化と2次元化) ---
@@ -85,6 +88,24 @@ def main():
                             node_contents = [node.content for node in graph.nodes]
                             
                             vectors = llm.fetch_embeddings(node_contents)
+                            
+                            # 各ノードにembeddingを格納
+                            for i, node in enumerate(graph.nodes):
+                                node.embedding = vectors[i]
+
+                            # 最初のノードのembeddingを基準とする
+                            if graph.nodes:
+                                first_node_embedding = np.array(graph.nodes[0].embedding)
+                                # コサイン類似度を計算し、ノードに格納
+                                for node in graph.nodes:
+                                    if node.embedding is not None:
+                                        node_embedding = np.array(node.embedding)
+                                        # ゼロ除算を避けるためにノルムがゼロでないことを確認
+                                        if np.linalg.norm(first_node_embedding) > 0 and np.linalg.norm(node_embedding) > 0:
+                                            node.cosine_sim_to_first = np.dot(node_embedding, first_node_embedding) / (np.linalg.norm(node_embedding) * np.linalg.norm(first_node_embedding))
+                                        else:
+                                            node.cosine_sim_to_first = 0.0 # あるいはNone, 適当なデフォルト値
+                            
                             positions = reduce_dimensions_pca(vectors)
                             
                             for i, node in enumerate(graph.nodes):

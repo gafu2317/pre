@@ -64,3 +64,9 @@ To run this application, follow these steps:
 *   **Data Validation:** Pydantic models are used to enforce the structure of the data returned by the LLM, ensuring type safety and preventing errors during graph generation.
 
 *   **State Management:** The Streamlit session state (`st.session_state`) is used to persist the generated graph data across user interactions, preventing re-analysis on every UI update.
+
+ユークリッド距離かコサイン類似度を使って次元数を削減せずに色に変換する
+HSVも使ってみる
+実際のユークリッド距離やコサイン類似度を表示する
+仮説として色の変化が話題の脱線とリンクしている
+    話題がずれていないのに、色が変わりすぎていることは避けたい

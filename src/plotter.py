@@ -1,6 +1,7 @@
 import pandas as pd
 import altair as alt
-import textwrap # ここを追加
+import textwrap
+import colorsys # colorsysをインポート
 from .models import ArgumentGraph
 
 class TopicMapPlotter:
@@ -34,27 +35,33 @@ class TopicMapPlotter:
                 "content_full": node.content,
                 "label_text": label_text,
                 "type": node.type,
-                "type_jp": TopicMapPlotter.NODE_TYPE_MAP.get(node.type, node.type)
+                "type_jp": TopicMapPlotter.NODE_TYPE_MAP.get(node.type, node.type),
+                "cosine_sim_to_first": node.cosine_sim_to_first # コサイン類似度を追加
             })
         nodes_df = pd.DataFrame(node_data)
         
-        # 2Dカラーマッピング処理
-        if not nodes_df.empty:
-            x_min, x_max = nodes_df['x_topic'].min(), nodes_df['x_topic'].max()
-            y_min, y_max = nodes_df['y_topic'].min(), nodes_df['y_topic'].max()
+        # HSVカラーマッピング処理
+        if not nodes_df.empty and 'cosine_sim_to_first' in nodes_df.columns:
+            # コサイン類似度を色相(H)にマッピング (0-1の範囲)
+            # コサイン類似度は-1から1の範囲。これを0から1の色相に線形マッピング
+            # 例えば、-1を0 (赤)、0を0.5 (緑)、1を1 (赤に戻る) のようにマッピング。
+            # 今回は、-1を0 (赤)、1を0.66 (青) の範囲にマッピングしてみる。
+            # H = (cosine_sim + 1) / 2 とすると、-1が0、1が1になる。
+            # 0.0 (赤) から 0.66 (青) の範囲で色相を変化させる。
+            nodes_df['h'] = nodes_df['cosine_sim_to_first'].apply(lambda x: (x + 1) / 2 * 0.66) # -1 -> 0, 1 -> 0.66
 
-            if (x_max - x_min) > 0:
-                nodes_df['r'] = ((nodes_df['x_topic'] - x_min) / (x_max - x_min) * 205 + 50).astype(int)
-            else:
-                nodes_df['r'] = 128
-
-            if (y_max - y_min) > 0:
-                nodes_df['g'] = ((nodes_df['y_topic'] - y_min) / (y_max - y_min) * 205 + 50).astype(int)
-            else:
-                nodes_df['g'] = 128
-                
-            nodes_df['b'] = 128
-            nodes_df['color_rgb'] = nodes_df.apply(lambda row: f"#{row['r']:02x}{row['g']:02x}{row['b']:02x}", axis=1)
+            # 彩度(S)と明度(V)は固定
+            fixed_s = 0.9 # 鮮やかに
+            fixed_v = 0.9 # 明るく
+            
+            # HSVからRGBに変換
+            nodes_df['color_rgb'] = nodes_df.apply(
+                lambda row: '#%02x%02x%02x' % tuple(int(x * 255) for x in colorsys.hsv_to_rgb(row['h'], fixed_s, fixed_v)), 
+                axis=1
+            )
+        else:
+            # cosine_sim_to_firstがない場合、デフォルト色を設定
+            nodes_df['color_rgb'] = '#808080' # 灰色
         
         return nodes_df
 
@@ -96,7 +103,7 @@ class TopicMapPlotter:
                 domain=list(TopicMapPlotter.NODE_TYPE_MAP.values()),
                 range=['circle', 'square', 'triangle-right', 'diamond']
             )),
-            tooltip=[alt.Tooltip('content_full:N', title='内容'), alt.Tooltip('id:N', title='ノードID')]
+            tooltip=[alt.Tooltip('content_full:N', title='内容'), alt.Tooltip('id:N', title='ノードID'), alt.Tooltip('cosine_sim_to_first:Q', title='コサイン類似度', format='.2f')]
         )
         foreground_text_layer = base.mark_text(
             align='center', baseline='middle', fontSize=10, color='black', lineBreak='\n', opacity=0.9
@@ -145,7 +152,7 @@ class TopicMapPlotter:
                 domain=list(TopicMapPlotter.NODE_TYPE_MAP.values()),
                 range=['circle', 'square', 'triangle-right', 'diamond']
             )),
-            tooltip=[alt.Tooltip('content_full:N', title='内容'), alt.Tooltip('id:N', title='ノードID')]
+            tooltip=[alt.Tooltip('content_full:N', title='内容'), alt.Tooltip('id:N', title='ノードID'), alt.Tooltip('cosine_sim_to_first:Q', title='コサイン類似度', format='.2f')]
         )
         foreground_text_layer = base.mark_text(
             align='center', baseline='middle', fontSize=10, color='black', lineBreak='\n', opacity=0.9
